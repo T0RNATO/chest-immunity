@@ -1,19 +1,21 @@
 package tornato.chest_immunity.mixin;
 
-import com.llamalad7.mixinextras.injector.ModifyReturnValue;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.explosion.Explosion;
-import net.minecraft.world.explosion.ExplosionBehavior;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.sugar.Local;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ServerExplosion;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 
-@Mixin({ExplosionBehavior.class, Entity.class})
+@Mixin(ServerExplosion.class)
 public class ExplosionMixin {
-    @ModifyReturnValue(method = {"canDestroyBlock", "canExplosionDestroyBlock"}, at = @At("RETURN"), require = 0)
-    private boolean foo(boolean original, Explosion explosion, BlockView world, BlockPos pos, BlockState state, float power) {
-        return original && world.getBlockEntity(pos) == null;
+    @Shadow @Final private ServerLevel level;
+
+    @ModifyExpressionValue(method = "calculateExplodedPositions", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/ExplosionDamageCalculator;shouldBlockExplode(Lnet/minecraft/world/level/Explosion;Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;F)Z"), require = 0)
+    private boolean foo(boolean original, @Local(name = "pos") BlockPos pos) {
+        return original && this.level.getBlockEntity(pos) == null;
     }
 }
